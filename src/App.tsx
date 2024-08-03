@@ -1,33 +1,56 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import { useCallback, useRef, useState } from 'react'
+import { Controls, Player } from '@lottiefiles/react-lottie-player'
+
 import './App.css'
+import { saveFile } from './saveFile'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const playerRef = useRef<Player>(null)
+  const [data, setData] = useState<object | null>(null)
+  const [name, setName] = useState('')
+  const handleSelectFile = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      try {
+        const dataText = await file.text()
+        setData(JSON.parse(dataText))
+        setName(file.name)
+      }
+      catch (e) {
 
+      }
+    }
+  }, [])
+  const handleExport = useCallback(async () => {
+    const animData = playerRef.current?.state.animationData
+    const container = playerRef.current?.container
+    if (animData && container) {
+      const svgText = container.innerHTML
+      saveFile(name.replace('.json', ''), svgText)
+    }
+  }, [name,])
   return (
     <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+      <div className='actions'>
+        <label className='file-input'>
+          <input type="file" id="file" name="file" accept='.json' onChange={handleSelectFile} />
+          <button>Select File</button>
+        </label>
+        <button disabled={!data} onClick={handleExport}>Export SVG</button>
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
+      <div style={{ width: '400px' }}>
+        <Player
+          ref={playerRef}
+          src={data || ''}
+          autoplay={false}
+          loop={false}
+          renderer="svg"
+          style={{ height: '400px', width: '400px', border: '1px solid black' }}
+
+        >
+          <Controls visible={true} buttons={['frame']} />
+        </Player>
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
     </>
   )
 }
